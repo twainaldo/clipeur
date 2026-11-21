@@ -1,0 +1,27 @@
+{
+  "son": "/chemin/vers/morceau.mp3",
+  "temps_avant": 8,
+  "format": "4:3",
+  "ips": 24,
+  "etalonnage": "film",
+  "plans_dossier": "/chemin/vers/dossier_de_plans",
+  "travail": "/chemin/vers/dossier_de_travail",
+  "titre": {"texte": "TITRE", "sous_titre": "ARTISTE", "depuis_temps": 1, "pas_temps": 1, "jusqua_temps": 8, "police": "cinema", "taille": 150},
+  "plans": [
+    {"fichier": "plan_01.mp4", "temps": 4, "choix": "calme", "zoom": "avant", "zoom_amp": 0.08, "sombre": 0.05, "saturation": 0.62},
+    {"fichier": "plan_02.mp4", "temps": 4, "choix": "calme", "zoom": "avant", "zoom_amp": 0.10, "sombre": 0.03, "saturation": 0.62},
+
+    {"fichier": "plan_03.mp4", "temps": 1, "zoom": "coup", "zoom_amp": 0.16, "flash": "blanc"},
+    {"fichier": "plan_04.mp4", "temps": 1, "zoom": "coup"},
+    {"fichier": "plan_05.mp4", "temps": 1, "x": 0.4, "zoom": "coup"},
+    {"fichier": "plan_06.mp4", "temps": 1, "zoom": "coup"},
+
+    {"fichier": "plan_07.mp4", "temps": 2, "zoom": "avant", "flash": 0.28},
+    {"fichier": "plan_08.mp4", "temps": 0.5},
+    {"fichier": "plan_09.mp4", "temps": 0.5},
+    {"fichier": "plan_10.mp4", "temps": 1, "zoom": "coup", "secousse": 8},
+
+    {"fichier": "plan_11.mp4", "temps": 3, "choix": "milieu", "zoom": "avant", "zoom_amp": 0.09, "flash": 0.28},
+    {"noir": true, "temps": 1}
+  ]
+}

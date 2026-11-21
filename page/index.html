@@ -1,0 +1,1205 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clipeur</title>
+<style>
+  :root {
+    --fond: #0d0814; --panneau: #160f1f; --creux: #100a18; --trait: #2b1f38; --trait-vif: #46325a;
+    --texte: #f4eef9; --doux: #a898b8; --sourd: #6f6080;
+    --rose: #ff4fa3; --menthe: #45e0c0; --ambre: #ffb65c; --lilas: #b596ff; --jaune: #e8e36a; --rouge: #ff6b6b;
+    --titre: "DIN Condensed", "Avenir Next Condensed", "Arial Narrow", Impact, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --corps: -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background:
+      radial-gradient(900px 500px at 8% -10%, rgba(255, 79, 163, .16), transparent 60%),
+      radial-gradient(800px 500px at 100% 110%, rgba(69, 224, 192, .08), transparent 60%),
+      var(--fond);
+    color: var(--texte); font: 15px/1.45 var(--corps); min-height: 100vh;
+    padding: 22px max(18px, 2.2vw) 40px;
+  }
+  button, input, textarea, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  [hidden] { display: none !important; }
+
+  /* en-tête */
+  .fil { display: flex; align-items: center; gap: 12px; font: 12px var(--mono); letter-spacing: .14em;
+         text-transform: uppercase; color: var(--doux); }
+  .fil .pastille { width: 9px; height: 9px; border-radius: 50%; background: var(--rose);
+                   box-shadow: 0 0 12px var(--rose); }
+  .fil .droite { margin-left: auto; color: var(--sourd); }
+  .fil #projet { color: var(--texte); max-width: 60vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  h1 { font: 700 clamp(44px, 6vw, 78px)/.92 var(--titre); letter-spacing: .01em; margin: 14px 0 4px;
+       text-transform: uppercase; }
+  h1 i { color: var(--rose); font-style: normal; padding: 0 .08em; }
+  h1 b { color: var(--rose); font-weight: 700; }
+  .sous { margin: 0 0 14px; color: var(--doux); font: 12px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+  .ruban { display: flex; align-items: center; gap: 12px; padding: 9px 14px; margin-bottom: 14px;
+           border: 1px solid var(--trait); border-radius: 10px; background: rgba(255,255,255,.02);
+           font: 12px var(--mono); color: var(--doux); min-height: 38px; }
+  .ruban b { color: var(--menthe); font-weight: 600; }
+  .ruban .fin { margin-left: auto; color: var(--rose); }
+  .lien { background: none; border: 0; padding: 0; color: var(--doux); text-decoration: underline;
+          text-underline-offset: 3px; font: 12px var(--mono); }
+  .lien:hover { color: var(--texte); }
+
+  /* panneaux */
+  .panneau { background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015));
+             border: 1px solid var(--trait); border-radius: 14px; min-width: 0; }
+  .panneau > .barre { display: flex; align-items: center; gap: 10px; padding: 11px 14px;
+                      border-bottom: 1px solid var(--trait); font: 600 12px var(--mono);
+                      letter-spacing: .14em; text-transform: uppercase; }
+  .panneau > .barre .note { margin-left: auto; color: var(--rose); font-weight: 500; letter-spacing: .08em; }
+  .panneau > .dedans { padding: 14px; }
+
+  /* accueil */
+  #accueil { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 14px; }
+  .depot { border: 1.5px dashed var(--trait-vif); border-radius: 14px; padding: 46px 24px; text-align: center;
+           background: var(--creux); transition: border-color .15s, background .15s; }
+  .depot.dessus { border-color: var(--rose); background: rgba(255, 79, 163, .07); }
+  .depot h2 { font: 700 34px/1 var(--titre); text-transform: uppercase; margin: 0 0 8px; letter-spacing: .02em; }
+  .depot p { margin: 0 0 18px; color: var(--doux); }
+  .depot small { display: block; margin-top: 14px; color: var(--sourd); font: 11px var(--mono); }
+  .bouton { border: 1px solid var(--trait-vif); background: rgba(255,255,255,.04); border-radius: 9px;
+            padding: 9px 14px; font-weight: 600; color: var(--texte); }
+  .bouton:hover { border-color: var(--doux); }
+  .bouton.plein { background: var(--rose); border-color: var(--rose); color: #1b0612; }
+  .bouton.plein:hover { filter: brightness(1.08); }
+  .bouton:disabled { opacity: .45; cursor: default; }
+  .bouton.petit { padding: 6px 10px; font: 600 12px var(--mono); letter-spacing: .05em; }
+  .barre-envoi { height: 4px; background: var(--trait); border-radius: 2px; margin-top: 16px; overflow: hidden; }
+  .barre-envoi span { display: block; height: 100%; width: 0; background: var(--rose); }
+  .champ { display: grid; gap: 5px; margin-bottom: 13px; }
+  .champ label, .etiquette { font: 600 11.5px var(--mono); letter-spacing: .11em; text-transform: uppercase; color: var(--doux); }
+  .champ .ligne { display: flex; align-items: center; gap: 10px; }
+  .champ output { font: 12px var(--mono); color: var(--texte); min-width: 62px; text-align: right; }
+  input[type=range] { flex: 1; accent-color: var(--rose); min-width: 0; }
+  textarea, input[type=text] { width: 100%; background: var(--creux); border: 1px solid var(--trait);
+            border-radius: 9px; padding: 9px 11px; resize: vertical; }
+  textarea:focus, input[type=text]:focus { outline: none; border-color: var(--rose); }
+  select { width: 100%; background: var(--creux); border: 1px solid var(--trait); border-radius: 9px; padding: 9px 11px; }
+  select:focus { outline: none; border-color: var(--rose); }
+  #son-reglages { display: grid; gap: 9px; margin-top: 4px; }
+  #son-reglages .coche-ligne { font: 13px var(--corps); letter-spacing: 0; text-transform: none; }
+  .mots { position: relative; display: flex; flex-wrap: wrap; gap: 4px; max-height: 138px; overflow: auto; padding: 6px;
+          background: var(--creux); border: 1px solid var(--trait); border-radius: 9px; }
+  .mots button { border: 1px solid transparent; background: rgba(255,255,255,.05); border-radius: 6px; padding: 3px 7px;
+                 font: 600 12px var(--mono); color: var(--doux); }
+  .mots button:hover { border-color: var(--rose); color: var(--texte); }
+  .mots button.drop { border-color: var(--ambre); color: var(--ambre); }
+  .mots button.doute { border-style: dashed; border-color: var(--trait-vif); font-weight: 400; }
+  .mots button.actif { background: var(--rose); border-color: var(--rose); color: #1b0612; }
+  .son-etat { font: 12px/1.5 var(--mono); color: var(--doux); }
+  .anciennes { display: grid; grid-template-columns: minmax(0, 1fr); gap: 7px; }
+  .ancienne { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 9px 11px;
+              background: var(--creux); border: 1px solid var(--trait); border-radius: 9px; }
+  .ancienne:hover { border-color: var(--rose); }
+  .ancienne:disabled { cursor: default; opacity: .78; border-color: var(--trait); }
+  .ancienne span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ancienne em { margin-left: auto; font: normal 11px var(--mono); color: var(--doux); white-space: nowrap; }
+  .vide { color: var(--sourd); font: 12px var(--mono); padding: 6px 0; }
+
+  /* atelier */
+  #atelier { display: grid; gap: 14px;
+             grid-template-columns: minmax(250px, 320px) minmax(0, 1fr) minmax(270px, 330px);
+             grid-template-areas: "moniteur moments reglages" "sequence sequence sequence" "taches taches sorties"; }
+  #p-moniteur { grid-area: moniteur; } #p-moments { grid-area: moments; } #p-reglages { grid-area: reglages; }
+  #p-sequence { grid-area: sequence; } #p-taches { grid-area: taches; } #p-sorties { grid-area: sorties; }
+  @media (max-width: 1080px) {
+    #atelier { grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+               grid-template-areas: "moniteur reglages" "moments moments" "sequence sequence" "taches taches" "sorties sorties"; }
+    #accueil { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    #atelier { grid-template-columns: 1fr;
+               grid-template-areas: "moniteur" "reglages" "moments" "sequence" "taches" "sorties"; }
+  }
+
+  .ecran { position: relative; width: 100%; aspect-ratio: 9 / 16; background: #000; border-radius: 10px;
+           overflow: hidden; border: 1px solid var(--trait); }
+  .ecran .jeu { position: absolute; left: 0; width: 100%; overflow: hidden; }
+  .ecran video { position: absolute; top: 0; height: 100%; display: block; }
+  .ecran canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .ecran .avis { position: absolute; inset: auto 10px 10px; padding: 7px 9px; border-radius: 7px;
+                 background: rgba(13, 8, 20, .88); font: 11px var(--mono); color: var(--ambre); }
+  .commandes { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  .commandes .temps { margin-left: auto; font: 12px var(--mono); color: var(--doux); }
+
+  .grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(172px, 1fr)); gap: 10px;
+            max-height: 620px; overflow: auto; padding-right: 2px; }
+  .moment { position: relative; text-align: left; padding: 0; overflow: hidden; background: var(--creux);
+            border: 1px solid var(--trait); border-radius: 10px; }
+  .moment:hover { border-color: var(--trait-vif); }
+  .moment.choisi { border-color: var(--rose); box-shadow: 0 0 0 1px var(--rose), 0 0 22px rgba(255,79,163,.18); }
+  .moment img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #000; }
+  .moment .bas { padding: 8px 9px 9px; display: grid; gap: 6px; }
+  .moment .quand { font: 600 13px var(--mono); display: flex; justify-content: space-between; }
+  .moment .quand em { font-style: normal; color: var(--doux); font-weight: 400; }
+  .jauge { height: 4px; background: var(--trait); border-radius: 2px; overflow: hidden; }
+  .jauge span { display: block; height: 100%; background: linear-gradient(90deg, var(--lilas), var(--rose)); }
+  .moment .num { position: absolute; top: 6px; left: 6px; font: 700 11px var(--mono); padding: 2px 6px;
+                 border-radius: 5px; background: rgba(13, 8, 20, .82); }
+  .moment .coche { position: absolute; top: 5px; right: 5px; width: 22px; height: 22px; border-radius: 6px;
+                   border: 1.5px solid rgba(255,255,255,.7); background: rgba(13, 8, 20, .6);
+                   display: grid; place-items: center; font-size: 13px; color: transparent; }
+  .moment.garde .coche { background: var(--menthe); border-color: var(--menthe); color: #062019; }
+  .moment .accroche { font-size: 12.5px; color: var(--doux); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .moment .vu-court { font-size: 12.5px; color: var(--texte); display: -webkit-box; -webkit-line-clamp: 2;
+                      -webkit-box-orient: vertical; overflow: hidden; }
+  .moment .avis { position: absolute; top: 6px; left: 38px; font: 700 11px var(--mono); padding: 2px 6px; border-radius: 5px;
+                  background: var(--menthe); color: #062019; }
+  .moment .avis.moyen { background: var(--ambre); color: #2a1500; }
+  .moment .avis.faible { background: var(--trait-vif); color: var(--texte); }
+  .moment.ecarte { opacity: .5; }
+  .moment.ecarte:hover, .moment.ecarte.choisi { opacity: 1; }
+  .vu { margin: 2px 0 8px; font-size: 13px; color: var(--doux); }
+  .puces { display: grid; gap: 6px; }
+  .puces button { text-align: left; background: var(--creux); border: 1px solid var(--trait); border-radius: 8px;
+                  padding: 7px 10px; font-size: 13.5px; }
+  .puces button:hover { border-color: var(--rose); }
+  .panneau > .barre .lien { letter-spacing: .06em; text-transform: none; font-weight: 500; }
+  #compte + .lien { margin-left: 4px; }
+
+  .choix { display: flex; background: var(--creux); border: 1px solid var(--trait); border-radius: 9px; padding: 3px; gap: 3px; }
+  .choix button { flex: 1; border: 0; background: none; padding: 6px 4px; border-radius: 6px; font-weight: 600; color: var(--doux); }
+  .choix button.actif { background: var(--trait-vif); color: var(--texte); }
+  .bornes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .bornes .case { background: var(--creux); border: 1px solid var(--trait); border-radius: 9px; padding: 8px; display: grid; gap: 6px; }
+  .bornes .valeur { font: 600 14px var(--mono); }
+  .bornes .rang { display: flex; gap: 4px; }
+  .bornes .rang button { flex: 1; }
+  .coche-ligne { display: flex; align-items: center; gap: 8px; color: var(--doux); font-size: 13px; }
+  .coche-ligne input { accent-color: var(--rose); }
+  .actions { display: grid; gap: 8px; margin-top: 4px; }
+
+  .piste { position: relative; height: 176px; border-radius: 10px; overflow: hidden; background: var(--creux);
+           border: 1px solid var(--trait); }
+  .piste .bande { position: absolute; left: 0; right: 0; top: 0; height: 58px; display: flex; opacity: .5; }
+  .piste .bande img { flex: 1; min-width: 0; height: 100%; object-fit: cover; }
+  .piste canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; }
+  .legende { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 9px; font: 12px var(--mono); color: var(--doux); }
+  .legende i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+
+  .etapes { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px 18px; }
+  .etape .haut { display: flex; gap: 8px; align-items: baseline; font-size: 12.5px; }
+  .etape .haut b { font: 700 11px var(--mono); }
+  .etape .haut em { margin-left: auto; font: normal 11px var(--mono); color: var(--doux); }
+  .etape .fil-etape { height: 3px; background: var(--trait); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+  .etape .fil-etape span { display: block; height: 100%; width: 0; transition: width .3s; }
+  .etape.attente { opacity: .45; }
+
+  .sortie { display: flex; align-items: center; gap: 9px; padding: 8px 0; border-bottom: 1px solid var(--trait); }
+  .sortie:last-child { border-bottom: 0; }
+  .sortie .qui { min-width: 0; flex: 1; }
+  .sortie .qui b { display: block; font: 600 12px var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sortie .qui span { font: 11px var(--mono); color: var(--doux); }
+  .sortie .etat-encours { color: var(--ambre); } .sortie .etat-erreur { color: var(--rouge); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="fil"><span class="pastille"></span><span id="projet">Aucune vidéo</span><span class="droite">Tout se fabrique sur ce Mac</span></div>
+  <h1>Clipeur <i>/</i> <b>moments</b></h1>
+  <p class="sous">Une vidéo longue entre · les moments forts sortent en clips verticaux</p>
+  <div class="ruban"><span id="ruban">Dépose une vidéo pour commencer.</span><span class="fin" id="ruban-fin"></span>
+    <button class="lien" id="autre" hidden>Changer de vidéo</button></div>
+</header>
+
+<main>
+  <section id="accueil">
+    <div>
+      <div class="depot" id="depot">
+        <h2>Dépose une vidéo longue ici</h2>
+        <p>Une partie enregistrée sur ta console, un live, n'importe quelle vidéo avec du son.</p>
+        <button class="bouton plein" id="choisir">Choisir une vidéo…</button>
+        <small>« Choisir » lit le fichier là où il est. Le glisser-déposer en fait une copie dans le dossier entree.</small>
+        <div class="barre-envoi" id="envoi" hidden><span></span></div>
+      </div>
+      <div class="panneau" style="margin-top:14px">
+        <div class="barre">Depuis X (Twitter) <span class="note" id="x-bilan"></span></div>
+        <div class="dedans">
+          <textarea id="x-liens" rows="3" placeholder="Colle ici un ou plusieurs liens de tweets" aria-label="Liens de tweets"></textarea>
+          <div style="display:flex; align-items:center; gap:12px; margin-top:10px">
+            <button class="bouton plein" id="x-go">Récupérer les vidéos</button>
+            <span class="vide" style="padding:0">La vidéo va dans le dossier entree. Le texte du tweet devient le hook.</span>
+          </div>
+          <div class="anciennes" id="x-lignes" style="margin-top:12px"></div>
+        </div>
+      </div>
+      <div class="panneau" style="margin-top:14px">
+        <div class="barre">Tes morceaux <button class="lien" id="sons-dossier" style="margin-left:auto">Ouvrir le dossier</button></div>
+        <div class="dedans">
+          <div class="anciennes" id="sons-liste"><div class="vide">Aucun morceau dans le dossier sons.</div></div>
+          <p class="vide" style="margin:10px 0 0; padding:0">Pour en poser un sur un clip : ouvre une vidéo (liste « Vidéos déjà analysées »), puis clique « Clip musique » dans les réglages du clip, à droite.</p>
+        </div>
+      </div>
+    </div>
+    <div style="display:grid; gap:14px; align-content:start">
+      <div class="panneau">
+        <div class="barre">Réglages de l'analyse</div>
+        <div class="dedans">
+          <div class="champ"><label for="r-avant">Secondes gardées avant le pic</label>
+            <div class="ligne"><input type="range" id="r-avant" min="2" max="40" step="1" value="20"><output id="o-avant"></output></div></div>
+          <div class="champ"><label for="r-apres">Secondes gardées après le pic</label>
+            <div class="ligne"><input type="range" id="r-apres" min="2" max="40" step="1" value="10"><output id="o-apres"></output></div></div>
+          <div class="champ"><label for="r-combien">Nombre de moments proposés</label>
+            <div class="ligne"><input type="range" id="r-combien" min="3" max="30" step="1" value="12"><output id="o-combien"></output></div></div>
+          <div class="champ" style="margin-bottom:0"><span class="etiquette">Lecture de l'image</span>
+            <div class="choix" id="r-image"><button data-v="auto" class="actif">Auto</button><button data-v="rapide">Rapide</button><button data-v="precise">Précise</button></div></div>
+        </div>
+      </div>
+      <div class="panneau">
+        <div class="barre">Avis de Claude <span class="note">avec ton abonnement</span></div>
+        <div class="dedans">
+          <label class="coche-ligne" style="margin-bottom:13px"><input type="checkbox" id="ia-actif"> Faire noter les moments par Claude et proposer les hooks</label>
+          <div class="champ"><span class="etiquette">Genre de clips</span>
+            <div class="choix genre"><button data-v="drole">Moment drôle</button><button data-v="musique">Clip musique</button></div></div>
+          <div class="champ"><span class="etiquette">Langue des hooks</span>
+            <div class="choix" id="ia-langue"><button data-v="en">English</button><button data-v="fr">Français</button></div></div>
+          <div class="champ"><span class="etiquette">Modèle</span>
+            <div class="choix" id="ia-modele"><button data-v="opus">Opus</button><button data-v="sonnet">Sonnet</button><button data-v="haiku">Haiku</button></div></div>
+          <div class="champ" style="margin-bottom:0"><label for="ia-contexte">De quoi parle la vidéo</label>
+            <input type="text" id="ia-contexte" placeholder="Le jeu ou le sujet, par exemple GTA 6"></div>
+        </div>
+      </div>
+      <div class="panneau">
+        <div class="barre">Dans le dossier entree <button class="lien" id="dossier-entree" style="margin-left:auto">Ouvrir le dossier</button></div>
+        <div class="dedans"><div class="anciennes" id="attente"><div class="vide">Aucune vidéo en attente.</div></div></div>
+      </div>
+      <div class="panneau">
+        <div class="barre">Vidéos déjà analysées</div>
+        <div class="dedans"><div class="anciennes" id="anciennes" style="max-height:440px; overflow-y:auto"><div class="vide">Aucune pour l'instant.</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="atelier" hidden>
+    <div class="panneau" id="p-moniteur">
+      <div class="barre">Moniteur <span class="note" id="format">1080 × 1920</span></div>
+      <div class="dedans">
+        <div class="ecran" id="ecran">
+          <div class="jeu" id="jeu"><video id="video" playsinline preload="metadata"></video></div>
+          <canvas id="calque" width="1080" height="1920"></canvas>
+          <canvas id="paroles" width="1080" height="1920"></canvas>
+          <div class="avis" id="avis" hidden>Ton navigateur ne sait pas lire ce format pour l'aperçu. Les clips se fabriquent quand même.</div>
+        </div>
+        <div class="commandes">
+          <button class="bouton petit" id="lecture">Pause</button>
+          <button class="bouton petit" id="muet">Son coupé</button>
+          <span class="temps" id="temps">0:00</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panneau" id="p-moments">
+      <div class="barre">Moments trouvés <span class="note" id="compte"></span>
+        <button class="lien" id="demander">Demander à Claude</button></div>
+      <div class="dedans"><div class="grille" id="grille"><div class="vide">L'analyse est en cours…</div></div></div>
+    </div>
+
+    <div class="panneau" id="p-reglages">
+      <div class="barre">Réglages du clip <span class="note" id="quel"></span></div>
+      <div class="dedans">
+        <div class="champ"><span class="etiquette">Genre de clip</span>
+          <div class="choix genre"><button data-v="drole" title="Clip agrandi, carte blanche, son du jeu gardé">Moment drôle</button><button data-v="musique" title="Bande 16:9, texte au-dessus, son du jeu coupé, ton dernier morceau posé dessus">Clip musique</button></div></div>
+        <div class="champ"><label for="hook">Hook affiché en haut</label>
+          <textarea id="hook" rows="3" placeholder="Écris ton hook ici"></textarea>
+          <div id="propositions" hidden>
+            <p class="vu" id="vu"></p>
+            <div class="puces" id="puces"></div>
+          </div></div>
+        <div class="champ"><span class="etiquette">Habillage du hook</span>
+          <div class="choix" id="style"><button data-v="carte">Carte</button><button data-v="texte">Texte</button><button data-v="aucun">Aucun</button></div></div>
+        <label class="coche-ligne" style="margin-bottom:9px"><input type="checkbox" id="entete"> En-tête façon tweet</label>
+        <div id="signature" hidden style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:13px">
+          <input type="text" id="nom" placeholder="Nom affiché" aria-label="Nom affiché">
+          <input type="text" id="arobase" placeholder="@compte" aria-label="Nom du compte">
+        </div>
+        <div class="champ"><label for="zoom">Zoom du jeu</label>
+          <div class="ligne"><input type="range" id="zoom" min="1" max="3.16" step="0.01" value="1"><output id="o-zoom"></output></div></div>
+        <div class="champ"><label for="volume">Son du jeu dans le clip</label>
+          <div class="ligne"><input type="range" id="volume" min="0" max="1" step="0.05" value="0.3"><output id="o-volume"></output></div></div>
+        <div class="champ"><label for="son-nom">Ton morceau sur le clip</label>
+          <select id="son-nom"><option value="">Aucun morceau</option></select>
+          <span class="vide" id="son-aide" style="padding:0">Choisis un morceau : il se pose sur le clip, avec ses paroles en gros sur l'image.</span>
+          <div id="son-reglages" hidden>
+            <div class="ligne"><input type="range" id="son-volume" min="0" max="1.5" step="0.05" value="1" aria-label="Volume du morceau"><output id="o-son-volume"></output></div>
+            <span class="etiquette">Ce qui doit tomber sur l'action</span>
+            <div class="mots" id="son-mots"></div>
+            <div class="son-etat" id="son-source"></div>
+            <button class="bouton petit" id="son-ici">Le poser ici, sur l'image affichée</button>
+            <div class="son-etat" id="son-etat"></div>
+            <label class="coche-ligne"><input type="checkbox" id="son-paroles"> Paroles en gros sur l'image</label>
+            <label class="coche-ligne"><input type="checkbox" id="son-ligne"> Ligne « ID » sous l'image</label>
+            <input type="text" id="son-id" aria-label="Texte de la ligne ID">
+            <button class="lien" id="son-corriger" style="justify-self:start">Corriger les paroles</button>
+            <div id="son-correction" hidden style="display:grid; gap:6px">
+              <textarea id="son-textes" rows="8" spellcheck="false" aria-label="Paroles, un groupe par ligne"></textarea>
+              <div class="ligne"><button class="bouton petit" id="son-garder">Garder</button>
+                <span class="vide" id="son-correction-etat" style="padding:0">Un groupe par ligne, sans en ajouter ni en retirer. Une ligne vide masque le groupe.</span></div>
+            </div>
+          </div>
+          <button class="lien" id="son-dossier" style="justify-self:start">Ouvrir le dossier des sons</button></div>
+        <div class="champ"><span class="etiquette">Début et fin <span id="o-duree" style="color:var(--texte)"></span></span>
+          <div class="bornes">
+            <div class="case"><span class="valeur" id="v-debut">0:00</span>
+              <div class="rang"><button class="bouton petit" data-borne="debut" data-pas="-1">−1 s</button><button class="bouton petit" data-borne="debut" data-pas="1">+1 s</button></div>
+              <button class="bouton petit" id="debut-ici">Début ici</button></div>
+            <div class="case"><span class="valeur" id="v-fin">0:00</span>
+              <div class="rang"><button class="bouton petit" data-borne="fin" data-pas="-1">−1 s</button><button class="bouton petit" data-borne="fin" data-pas="1">+1 s</button></div>
+              <button class="bouton petit" id="fin-ici">Fin ici</button></div>
+          </div>
+          <div class="ligne" style="gap:6px; margin-top:3px"><span class="vide" style="padding:0; margin-right:4px">Durée</span>
+            <button class="bouton petit" data-duree="16">16 s</button><button class="bouton petit" data-duree="20">20 s</button><button class="bouton petit" data-duree="30">30 s</button></div></div>
+        <div class="actions">
+          <button class="bouton plein" id="fabriquer">Fabriquer ce clip</button>
+          <button class="bouton" id="fabriquer-tout">Fabriquer les moments cochés</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panneau" id="p-sequence">
+      <div class="barre">Séquence <span class="note" id="longueur"></span></div>
+      <div class="dedans">
+        <div class="piste"><div class="bande" id="bande"></div><canvas id="piste"></canvas></div>
+        <div class="legende">
+          <span><i style="background:var(--rose)"></i>note de chaque seconde</span>
+          <span><i style="background:var(--menthe)"></i>niveau du son</span>
+          <span><i style="border:1.5px solid var(--ambre)"></i>moment proposé</span>
+          <span>Clic : aller à cet endroit · double-clic : ajouter un moment ici · espace : lecture · ← → : changer de moment</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panneau" id="p-taches">
+      <div class="barre">Tâches <span class="note" id="bilan"></span></div>
+      <div class="dedans"><div class="etapes" id="etapes"></div></div>
+    </div>
+
+    <div class="panneau" id="p-sorties">
+      <div class="barre">Clips fabriqués <button class="lien" id="dossier" style="margin-left:auto">Ouvrir le dossier</button></div>
+      <div class="dedans" id="sorties"><div class="vide">Aucun clip pour l'instant.</div></div>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const COULEURS = ['var(--rose)', 'var(--ambre)', 'var(--menthe)', 'var(--lilas)', 'var(--jaune)', 'var(--rose)'];
+
+async function api(chemin, corps) {
+  const r = await fetch(chemin, corps === undefined ? undefined :
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.erreur || 'Erreur');
+  return j;
+}
+const garde = { lire(c, d) { try { const v = localStorage.getItem(c); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+                ecrire(c, v) { try { localStorage.setItem(c, JSON.stringify(v)); } catch (e) {} } };
+const mmss = s => { s = Math.max(0, s); const m = Math.floor(s / 60); return m + ':' + String(Math.floor(s % 60)).padStart(2, '0'); };
+const poids = o => o > 1e6 ? (o / 1e6).toFixed(1).replace('.', ',') + ' Mo' : Math.round(o / 1e3) + ' ko';
+
+let job = null, moments = [], choisi = -1, sonde = null, suivi = null;
+const regl = Object.assign({ style: 'carte', zoom: 1.65, volume: 1, entete: false, nom: '', arobase: '' }, garde.lire('clipeur-reglages', {}));
+const ia = Object.assign({ actif: true, langue: 'en', modele: 'opus', contexte: 'GTA 6', genre: 'drole' }, garde.lire('clipeur-ia', {}));
+/* le texte d'un tweet ramené à une ligne de hook */
+const court = t => { t = (t || '').split('\n')[0].trim(); if (t.length <= 110) return t; const c = t.slice(0, 110); return c.slice(0, Math.max(60, c.lastIndexOf(' '))) + '…'; };
+let avisEtat = null, sondeIa = null, dernierJob = null;
+const video = $('#video');
+
+/* ---------- ton morceau sur le clip ----------
+   Un morceau du dossier sons se pose sur le clip. On choisit ce qui doit tomber sur l'action (un drop
+   ou un mot chanté) et l'image où ça tombe ; le site en déduit d'où part le morceau. */
+const son = Object.assign({ nom: '', dernier: null, volume: 1, paroles: true, ligne: true, forts: {}, ids: {} }, garde.lire('clipeur-son', {}));
+let sons = [], fiche = null, sondeSons = null, groupeVu = null;
+const audio = new Audio(); audio.preload = 'auto';
+const noterSon = () => garde.ecrire('clipeur-son', son);
+const dixieme = t => { const d = Math.round(t * 10); return Math.floor(d / 600) + ':' + String(Math.floor(d / 10) % 60).padStart(2, '0') + ',' + d % 10; };
+const virgule = x => x.toFixed(1).replace('.', ',');
+const titreSon = nom => nom.replace(/\.[a-z0-9]+$/i, '').replace(/\s*[(\[]?\s*tik\s?tok version\s*[)\]]?/i, '').trim();
+const ligneId = () => typeof son.ids[son.nom] === 'string' ? son.ids[son.nom] : 'ID : ' + titreSon(son.nom);
+/* l'instant du morceau qui doit tomber sur l'action : celui que tu as cliqué, sinon le drop le plus net ;
+   null quand le morceau n'a pas de drop et que rien n'est choisi : il part alors de son début */
+function fort() {
+  if (!fiche) return null;
+  const f = son.forts[son.nom];
+  return typeof f === 'number' ? f : fiche.drops[0] ? fiche.drops[0].t : null;
+}
+/* l'instant de la vidéo où ça tombe : celui que tu as posé, sinon le pic du moment */
+function ancre(m) {
+  if (typeof m.ancre === 'number') return m.ancre;
+  return m.pic > m.debut + 1 && m.pic < m.fin - 1 ? m.pic : m.debut + (m.fin - m.debut) * 0.4;
+}
+/* d'où part le morceau à la première image du clip (négatif : il démarre après le début du clip) */
+const departSon = m => { const f = fort(); return f === null ? 0 : f - (ancre(m) - m.debut); };
+
+async function chargerSons() {
+  let r;
+  try { r = await api('/api/sons'); } catch (err) { return; }
+  sons = r.sons;
+  const sel = $('#son-nom');
+  sel.replaceChildren(new Option('Aucun morceau', ''), ...sons.map(x => {
+    const o = new Option(titreSon(x.nom) + (x.pret ? '' : x.etat.startsWith('erreur') ? ' · illisible' : ' · analyse en cours…'), x.nom);
+    o.disabled = !x.pret; return o; }));
+  if (son.nom && !sons.some(x => x.nom === son.nom)) { son.nom = ''; fiche = null; noterSon(); }
+  sel.value = son.nom;
+  const liste = $('#sons-liste');
+  liste.replaceChildren(...sons.map(x => {
+    const d = document.createElement('div'); d.className = 'ancienne'; d.style.cursor = 'default';
+    const n = document.createElement('span'); n.textContent = titreSon(x.nom);
+    const e = document.createElement('em');
+    e.textContent = !x.pret ? (x.etat.startsWith('erreur') ? 'illisible' : 'analyse en cours…')
+      : (x.drops.length ? 'drop à ' + dixieme(x.drops[0].t) : 'pas de drop net') + ' · '
+        + (!x.paroles ? 'pas de paroles' : x.origine !== 'koda' ? 'paroles de Whisper, à relire'
+           : x.cale ? 'paroles de Koda de ' + mmss(x.cale[0]) + ' à ' + mmss(x.cale[1]) : 'paroles de Koda');
+    d.append(n, e); return d;
+  }));
+  if (!sons.length) liste.innerHTML = '<div class="vide">Aucun morceau dans le dossier sons.</div>';
+  clearTimeout(sondeSons);
+  if (sons.some(x => !x.pret && !x.etat.startsWith('erreur'))) sondeSons = setTimeout(chargerSons, 2500);
+  if (son.nom && !fiche && sons.some(x => x.nom === son.nom && x.pret)) choisirSon(son.nom); else reglagesSon();
+}
+async function choisirSon(nom, voulu) {
+  son.nom = nom; if (nom || voulu) son.dernier = nom; noterSon();
+  fiche = null; groupeVu = null; audio.pause();
+  $('#son-correction').hidden = true;
+  if (nom) {
+    let f = null;
+    try { f = await api('/api/son?nom=' + encodeURIComponent(nom)); } catch (err) {}
+    if (son.nom !== nom) return;          // un autre choix est arrivé entre-temps
+    fiche = f;
+    if (fiche) audio.src = '/son?nom=' + encodeURIComponent(nom);
+  } else { audio.removeAttribute('src'); audio.load(); }
+  $('#son-nom').value = nom;
+  reglagesSon(); calque(); calerAudio(true);
+}
+function reglagesSon() {
+  const actif = !!(son.nom && fiche);
+  $('#son-reglages').hidden = !actif; $('#son-aide').hidden = actif;
+  if (!actif) { $('#son-etat').textContent = ''; return; }
+  $('#son-volume').value = son.volume; $('#o-son-volume').textContent = Math.round(son.volume * 100) + ' %';
+  $('#son-paroles').checked = son.paroles; $('#son-ligne').checked = son.ligne;
+  $('#son-paroles').closest('label').hidden = !fiche.paroles.length;
+  $('#son-corriger').hidden = !fiche.paroles.length;
+  $('#son-id').hidden = !son.ligne;
+  if (document.activeElement !== $('#son-id')) $('#son-id').value = ligneId();
+  // la frise du morceau : ses drops et ses paroles, dans l'ordre ; un clic choisit ce qui tombe sur l'action
+  const f = fort(), boite = $('#son-mots');
+  const points = [...fiche.drops.map(d => ({ t: d.t, texte: '▼ drop ' + dixieme(d.t), drop: true })),
+                  ...fiche.paroles.filter(g => g.t).map(g => ({ t: g.d, texte: g.t, doute: !g.sur }))].sort((p, q) => p.t - q.t);
+  let vu = null;
+  boite.replaceChildren(...points.map(p => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = p.texte; b.title = 'à ' + dixieme(p.t) + ' du morceau';
+    const actuel = !vu && f !== null && Math.abs(p.t - f) < 0.005;
+    b.className = (p.drop ? 'drop' : p.doute ? 'doute' : '') + (actuel ? ' actif' : '');
+    if (actuel) vu = b;
+    b.onclick = () => { son.forts[son.nom] = p.t; noterSon(); reglagesSon(); calerAudio(true); };
+    return b;
+  }));
+  if (vu) boite.scrollTop = Math.max(0, vu.offsetTop - 48);
+  // d'où viennent les paroles : celles de Koda sont calées à la main, celles de Whisper sont à relire
+  const doutes = fiche.paroles.filter(g => g.t && !g.sur).length;
+  $('#son-source').textContent = !fiche.paroles.length ? 'Pas de paroles trouvées dans ce morceau.'
+    : !doutes ? 'Paroles calées à la main dans Koda.'
+    : fiche.cale ? 'Paroles de Koda de ' + mmss(fiche.cale[0]) + ' à ' + mmss(fiche.cale[1]) + '. Les mots en pointillés viennent de Whisper : à relire.'
+    : 'Paroles entendues par Whisper : à relire avant de publier.';
+  etatSon();
+}
+function etatSon() {
+  const m = moments[choisi], e = $('#son-etat');
+  if (!m || !son.nom || !fiche) { e.textContent = ''; return; }
+  const d = departSon(m), duree = m.fin - m.debut, a = ancre(m) - m.debut;
+  let t = fort() === null ? 'Le morceau part de son début. Clique un mot pour le faire tomber sur l\'action. '
+                          : 'Ça tombe à ' + virgule(a) + ' s du début du clip. ';
+  if (fort() !== null) t += d >= 0 ? 'Le morceau part de ' + dixieme(d) + '.' : 'Le morceau ne démarre que ' + virgule(-d) + ' s après le début du clip.';
+  if (d + duree > fiche.duree + 0.2) t += ' Il s\'arrête ' + virgule(d + duree - fiche.duree) + ' s avant la fin du clip.';
+  if (fort() !== null && (a < 0 || a > duree)) t += ' Attention : ce point est en dehors du clip.';
+  e.textContent = t;
+}
+/* l'aperçu : le morceau suit la vidéo, avec le même réglage de son coupé */
+function calerAudio(force) {
+  const m = moments[choisi];
+  if (!m || !son.nom || !fiche || !audio.getAttribute('src')) { if (!audio.paused) audio.pause(); return; }
+  const t = departSon(m) + (video.currentTime - m.debut);
+  audio.muted = video.muted; audio.volume = Math.min(1, son.volume);
+  if (t < 0 || t >= fiche.duree) { if (!audio.paused) audio.pause(); return; }
+  if (force || Math.abs(audio.currentTime - t) > 0.15) { try { audio.currentTime = t; } catch (err) {} }
+  if (video.paused) { if (!audio.paused) audio.pause(); }
+  else if (audio.paused) audio.play().catch(() => {});
+}
+['play', 'pause', 'seeked', 'timeupdate'].forEach(n => video.addEventListener(n, () => calerAudio(n === 'seeked')));
+$('#son-nom').onchange = e => choisirSon(e.target.value, true);
+$('#son-volume').oninput = e => { son.volume = +e.target.value; noterSon(); $('#o-son-volume').textContent = Math.round(son.volume * 100) + ' %'; calerAudio(); };
+$('#son-paroles').onchange = e => { son.paroles = e.target.checked; noterSon(); groupeVu = null; };
+$('#son-ligne').onchange = e => { son.ligne = e.target.checked; noterSon(); reglagesSon(); calque(); };
+$('#son-id').oninput = e => { son.ids[son.nom] = e.target.value; noterSon(); calque(); };
+$('#son-ici').onclick = () => { const m = moments[choisi]; if (!m) return; m.ancre = +video.currentTime.toFixed(2); etatSon(); groupeVu = null; calerAudio(true); };
+$('#son-dossier').onclick = $('#sons-dossier').onclick = () => api('/api/finder', { dossier: 'sons' });
+$('#son-corriger').onclick = () => {
+  const c = $('#son-correction'); c.hidden = !c.hidden;
+  if (!c.hidden) $('#son-textes').value = fiche.paroles.map(g => g.t).join('\n');
+};
+$('#son-garder').onclick = async () => {
+  try {
+    const textes = $('#son-textes').value.split('\n');
+    while (textes.length > fiche.paroles.length && !textes[textes.length - 1].trim()) textes.pop();   // lignes vides en trop à la fin
+    fiche = await api('/api/son/paroles', { nom: son.nom, textes });
+    $('#son-correction').hidden = true; groupeVu = null; reglagesSon();
+  } catch (err) { $('#son-correction-etat').textContent = err.message; }
+};
+
+/* ---------- accueil ---------- */
+function liaison(id, sortie, texte) {
+  const e = $(id), o = $(sortie);
+  const maj = () => { o.textContent = texte(e.value); };
+  e.addEventListener('input', maj); maj();
+}
+liaison('#r-avant', '#o-avant', v => v + ' s');
+liaison('#r-apres', '#o-apres', v => v + ' s');
+liaison('#r-combien', '#o-combien', v => v);
+let lectureImage = 'auto';
+$('#r-image').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  lectureImage = b.dataset.v;
+  [...$('#r-image').children].forEach(x => x.classList.toggle('actif', x === b));
+});
+/* réglages de l'avis de Claude */
+function reglagesIa() {
+  $('#ia-actif').checked = ia.actif; $('#ia-contexte').value = ia.contexte;
+  [...$('#ia-langue').children].forEach(x => x.classList.toggle('actif', x.dataset.v === ia.langue));
+  [...$('#ia-modele').children].forEach(x => x.classList.toggle('actif', x.dataset.v === ia.modele));
+  document.querySelectorAll('.genre button').forEach(x => x.classList.toggle('actif', x.dataset.v === ia.genre));
+  garde.ecrire('clipeur-ia', ia);
+}
+/* le genre règle d'un coup la mise en page du clip et la consigne donnée à Claude */
+function genre(v) {
+  ia.genre = v; reglagesIa();
+  Object.assign(regl, v === 'musique' ? { zoom: 1, style: 'texte', volume: 0 } : { zoom: 1.65, style: 'carte', volume: 1 });
+  garde.ecrire('clipeur-reglages', regl);
+  if (job) { regl.zoom = Math.min(regl.zoom, +$('#zoom').max || 1); video.volume = regl.volume; reglages(); calque(); }
+  // « Clip musique » repose ton dernier morceau ; « Moment drôle » l'enlève
+  if (v === 'musique' && !son.nom && son.dernier !== '') {      // '' : tu as choisi « Aucun morceau », on n'y touche pas
+    const choix = sons.find(x => x.nom === son.dernier && x.pret) || (son.dernier ? null : sons.find(x => x.pret));
+    if (choix) choisirSon(choix.nom);
+  }
+  if (v === 'drole' && son.nom) choisirSon('');
+}
+document.querySelectorAll('.genre').forEach(g => g.addEventListener('click', e => { const b = e.target.closest('button'); if (b) genre(b.dataset.v); }));
+$('#ia-actif').onchange = e => { ia.actif = e.target.checked; reglagesIa(); };
+$('#ia-contexte').oninput = e => { ia.contexte = e.target.value; garde.ecrire('clipeur-ia', ia); };
+$('#ia-langue').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { ia.langue = b.dataset.v; reglagesIa(); } });
+$('#ia-modele').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { ia.modele = b.dataset.v; reglagesIa(); } });
+reglagesIa();
+
+async function accueil() {
+  const e = await api('/api/etat');
+  const boite = $('#anciennes');
+  boite.replaceChildren();
+  if (!e.analyses.length) { boite.innerHTML = '<div class="vide">Aucune pour l\'instant.</div>'; }
+  for (const a of e.analyses) {
+    const b = document.createElement('button');
+    b.className = 'ancienne';
+    const nom = document.createElement('span'); nom.textContent = a.titre ? '@' + a.arobase + ' · ' + a.titre.replace(/\s+/g, ' ') : a.nom;
+    const info = document.createElement('em'); info.textContent = mmss(a.duree) + ' · ' + a.moments + (a.moments > 1 ? ' moments' : ' moment');
+    b.append(nom, info);
+    b.onclick = () => ouvrir(a.id);
+    boite.append(b);
+  }
+  const attente = $('#attente');
+  attente.replaceChildren();
+  if (!e.entree.length) { attente.innerHTML = '<div class="vide">Aucune vidéo en attente.</div>'; }
+  for (const v of e.entree) {
+    const b = document.createElement('button');
+    b.className = 'ancienne';
+    const nom = document.createElement('span'); nom.textContent = v.nom;
+    const info = document.createElement('em'); info.textContent = poids(v.poids) + ' · analyser';
+    b.append(nom, info);
+    b.onclick = () => lancer(v.chemin);
+    attente.append(b);
+  }
+  sorties(e);
+  if (e.import) { lignesX(e.import); if (e.import.encours && !sondeX) suivreX(); }
+}
+$('#dossier-entree').onclick = () => api('/api/finder', { dossier: 'entree' });
+
+/* ---------- tweets : des liens entrent, les vidéos arrivent avec leur texte ---------- */
+let sondeX = null;
+const ETATS_X = { attente: 'en attente', lecture: 'lecture du tweet', analyse: 'analyse', pret: 'prêt · ouvrir', erreur: 'raté' };
+function lignesX(imp) {
+  const boite = $('#x-lignes');
+  boite.replaceChildren();
+  const prets = imp.lignes.filter(l => l.etat === 'pret').length;
+  $('#x-bilan').textContent = imp.lignes.length ? prets + ' / ' + imp.lignes.length + (prets > 1 ? ' prêts' : ' prêt') : '';
+  for (const l of imp.lignes) {
+    const b = document.createElement('button');
+    b.className = 'ancienne'; b.disabled = l.etat !== 'pret';
+    const nom = document.createElement('span');
+    nom.textContent = (l.arobase ? '@' + l.arobase + ' · ' : '') + (l.erreur || (l.texte || '').replace(/\s+/g, ' ') || 'tweet ' + l.id);
+    const info = document.createElement('em');
+    info.textContent = l.etat === 'telechargement' ? 'téléchargement ' + Math.round((l.p || 0) * 100) + ' %' : ETATS_X[l.etat] || l.etat;
+    if (l.etat === 'erreur') info.style.color = 'var(--rouge)';
+    b.append(nom, info);
+    if (l.job) b.onclick = () => ouvrir(l.job);
+    boite.append(b);
+  }
+}
+function suivreX() {
+  clearInterval(sondeX);
+  const tour = async () => {
+    let e;
+    try { e = await api('/api/etat'); } catch (err) { return; }
+    lignesX(e.import);
+    if (!e.import.encours) {
+      clearInterval(sondeX); sondeX = null;
+      const prets = e.import.lignes.filter(l => l.etat === 'pret').length;
+      if (!job) { $('#ruban').textContent = prets + (prets > 1 ? ' vidéos prêtes' : ' vidéo prête') + ' sur ' + e.import.lignes.length + '. Clique sur une ligne pour l\'ouvrir.'; accueil(); }
+    }
+  };
+  tour(); sondeX = setInterval(tour, 800);
+}
+$('#x-go').onclick = async () => {
+  try {
+    const r = await api('/api/x', { liens: $('#x-liens').value });
+    $('#ruban').textContent = r.combien ? r.combien + (r.combien > 1 ? ' tweets à récupérer…' : ' tweet à récupérer…') : 'Déjà dans la liste.';
+    $('#x-liens').value = '';
+    suivreX();
+  } catch (err) { $('#ruban').textContent = err.message; }
+};
+
+async function lancer(chemin) {
+  try {
+    const r = await api('/api/analyser', { chemin, avant: +$('#r-avant').value, apres: +$('#r-apres').value,
+                                           combien: +$('#r-combien').value, image: lectureImage });
+    ouvrir(r.id);
+  } catch (err) { $('#ruban').textContent = err.message; }
+}
+$('#choisir').onclick = async () => {
+  $('#ruban').textContent = 'Choisis ta vidéo dans la fenêtre qui vient de s\'ouvrir…';
+  const r = await api('/api/choisir', {});
+  if (r.chemin) lancer(r.chemin); else $('#ruban').textContent = 'Aucune vidéo choisie. Tu peux aussi la glisser ici, ou la poser dans le dossier entree.';
+};
+const depot = $('#depot');
+['dragenter', 'dragover'].forEach(n => depot.addEventListener(n, e => { e.preventDefault(); depot.classList.add('dessus'); }));
+['dragleave', 'drop'].forEach(n => depot.addEventListener(n, e => { e.preventDefault(); depot.classList.remove('dessus'); }));
+depot.addEventListener('drop', e => {
+  const f = [...e.dataTransfer.files].find(x => /\.(mp4|mov|mkv|webm|m4v)$/i.test(x.name));
+  if (!f) { $('#ruban').textContent = 'Dépose une vidéo (.mp4, .mov, .mkv, .webm).'; return; }
+  const x = new XMLHttpRequest(), barre = $('#envoi');
+  barre.hidden = false;
+  x.open('PUT', '/api/depot?nom=' + encodeURIComponent(f.name));
+  x.upload.onprogress = ev => { barre.firstElementChild.style.width = (ev.loaded / ev.total * 100) + '%';
+                                $('#ruban').textContent = 'Copie de ' + f.name + ' : ' + Math.round(ev.loaded / ev.total * 100) + ' %'; };
+  x.onload = () => { barre.hidden = true; const j = JSON.parse(x.responseText || '{}');
+                     if (x.status === 200) lancer(j.chemin); else $('#ruban').textContent = j.erreur || 'Copie impossible.'; };
+  x.onerror = () => { barre.hidden = true; $('#ruban').textContent = 'Copie impossible.'; };
+  x.send(f);
+});
+$('#autre').onclick = () => {
+  clearInterval(sonde); clearInterval(sondeIa); video.pause(); video.removeAttribute('src'); video.load(); audio.pause();
+  try { history.replaceState(null, '', location.pathname); } catch (err) {}
+  job = null; moments = []; choisi = -1; avisEtat = null; dernierJob = null;
+  $('#atelier').hidden = true; $('#accueil').hidden = false; $('#autre').hidden = true;
+  $('#projet').textContent = 'Aucune vidéo'; $('#ruban').textContent = 'Dépose une vidéo pour commencer.'; $('#ruban-fin').textContent = '';
+  accueil();
+};
+
+/* ---------- analyse ---------- */
+function ouvrir(id) {
+  try { history.replaceState(null, '', '#' + id); } catch (err) {}
+  $('#accueil').hidden = true; $('#atelier').hidden = false; $('#autre').hidden = false;
+  $('#grille').innerHTML = '<div class="vide">L\'analyse est en cours…</div>';
+  $('#compte').textContent = ''; $('#bilan').textContent = '';
+  clearInterval(sonde);
+  const tour = async () => {
+    let j;
+    try { j = await api('/api/job?id=' + id); }
+    catch (err) { clearInterval(sonde); if (!job) $('#autre').onclick(); $('#ruban').textContent = err.message; return; }
+    $('#projet').textContent = 'Projet / ' + j.nom;
+    etapes(j);
+    if (j.etat === 'erreur') { clearInterval(sonde); $('#ruban').textContent = 'Analyse impossible : ' + j.erreur; }
+    if (j.etat === 'pret') { clearInterval(sonde); installer(j); }
+  };
+  tour(); sonde = setInterval(tour, 600);
+}
+
+function etapes(j) {
+  dernierJob = j;
+  const boite = $('#etapes');
+  boite.replaceChildren();
+  let courant = null;
+  const liste = j.etapes.slice();
+  if (avisEtat || ia.actif) {
+    const a = avisEtat || { etat: 'attente', p: 0 };
+    liste.push({ cle: 'ia', nom: 'Demander l\'avis de Claude', p: a.p || 0,
+                 etat: a.etat === 'fini' ? 'fini' : a.etat === 'encours' ? 'encours' : 'attente', echec: a.etat === 'erreur' });
+  }
+  liste.forEach((e, i) => {
+    const d = document.createElement('div');
+    d.className = 'etape ' + e.etat;
+    const haut = document.createElement('div'); haut.className = 'haut';
+    const n = document.createElement('b'); n.textContent = String(i + 1).padStart(2, '0'); n.style.color = COULEURS[i % COULEURS.length];
+    const nom = document.createElement('span'); nom.textContent = e.nom;
+    const p = document.createElement('em'); p.textContent = e.echec ? 'pas fait' : e.etat === 'fini' ? 'fait' : e.etat === 'encours' ? Math.round(e.p * 100) + ' %' : 'à venir';
+    haut.append(n, nom, p);
+    const fil = document.createElement('div'); fil.className = 'fil-etape';
+    const s = document.createElement('span'); s.style.width = (e.etat === 'fini' ? 100 : e.p * 100) + '%'; s.style.background = COULEURS[i % COULEURS.length];
+    fil.append(s); d.append(haut, fil); boite.append(d);
+    if (e.etat === 'encours') courant = { i, e };
+  });
+  if (courant) {
+    $('#ruban').innerHTML = '';
+    const b = document.createElement('b'); b.textContent = String(courant.i + 1).padStart(2, '0') + ' ' + courant.e.nom;
+    $('#ruban').append(b, document.createTextNode('  ' + Math.round(courant.e.p * 100) + ' %'));
+  }
+}
+
+function installer(j) {
+  job = j;
+  const a = j.analyse, inf = a.infos;
+  // une vidéo venue d'un tweet part avec le texte du tweet comme hook (Claude peut proposer mieux ensuite)
+  const titre = j.source && j.source.texte ? court(j.source.texte) : '';
+  moments = a.moments.map(m => Object.assign({ garde: false, hook: titre, hookAuto: !!titre, cle: m.debut.toFixed(2) + '-' + m.fin.toFixed(2) }, m));
+  avisEtat = null;
+  $('#ruban').textContent = moments.length + ' moments trouvés dans ' + mmss(inf.duree) + ' de vidéo.';
+  $('#ruban-fin').textContent = 'Analyse faite en ' + String(j.secondes || 0).replace('.', ',') + ' s';
+  $('#bilan').textContent = 'image : lecture ' + (inf.image === 'rapide' ? 'rapide' : 'précise');
+  $('#longueur').textContent = mmss(inf.duree) + ' · ' + inf.largeur + ' × ' + inf.hauteur;
+  const zmax = Math.max(1, 1920 / (1080 * inf.hauteur / inf.largeur));
+  $('#zoom').max = zmax.toFixed(2); $('#zoom').disabled = zmax <= 1.001;
+  regl.zoom = Math.min(regl.zoom, zmax);
+  $('#bande').replaceChildren(...Array.from({ length: a.bande }, (_, i) => {
+    const im = new Image(); im.src = '/vignette?id=' + j.id + '&nom=b_' + String(i).padStart(2, '0') + '.jpg'; im.alt = ''; return im; }));
+  $('#avis').hidden = true;
+  video.src = '/video?id=' + j.id;
+  video.muted = true; $('#muet').textContent = 'Son coupé';
+  chargerSons();
+  const entier = j.source ? moments.findIndex(m => m.entier) : -1;
+  grille(); reglages(); choisir(entier >= 0 ? entier : moments.length ? plusFort() : -1); piste();
+  if (j.ia && j.ia.etat === 'fini') appliquer(j.ia);
+  else if (ia.actif && moments.length) demander();
+  else etapes(j);
+}
+const valeur = m => m.ia ? 100 + m.ia.note : m.note;
+const plusFort = () => moments.reduce((b, m, i) => valeur(m) > valeur(moments[b]) ? i : b, 0);
+
+/* ---------- avis de Claude ---------- */
+async function demander() {
+  if (!job || !moments.length || (avisEtat && avisEtat.etat === 'encours')) return;
+  moments.forEach(m => { m.cle = m.debut.toFixed(2) + '-' + m.fin.toFixed(2); });
+  const envoi = moments.slice(0, 24);
+  try {
+    await api('/api/ia', { job: job.id, moments: envoi.map(m => ({ debut: m.debut, fin: m.fin })), langue: ia.langue,
+                           contexte: ia.contexte, modele: ia.modele, genre: ia.genre,
+                           garder: Math.min(6, Math.max(1, Math.round(envoi.length / 2))) });
+  } catch (err) { $('#ruban').textContent = err.message; return; }
+  avisEtat = { etat: 'encours', p: 0 };
+  $('#demander').disabled = true;
+  const depart = Date.now();
+  clearInterval(sondeIa);
+  const tour = async () => {
+    let j;
+    try { j = await api('/api/job?id=' + job.id); } catch (err) { return; }
+    const a = j.ia || {};
+    avisEtat = { etat: a.etat, p: a.p || 0 };
+    etapes(dernierJob || j);
+    if (a.etat === 'encours') {
+      $('#ruban').innerHTML = '';
+      const b = document.createElement('b'); b.textContent = 'Claude regarde les ' + envoi.length + ' moments';
+      $('#ruban').append(b, document.createTextNode('  ' + Math.round((Date.now() - depart) / 1000) + ' s'));
+      return;
+    }
+    clearInterval(sondeIa); $('#demander').disabled = false;
+    if (a.etat === 'fini') appliquer(a);
+    else $('#ruban').textContent = 'Claude n\'a pas pu répondre : ' + (a.erreur || 'erreur inconnue') + ' Les moments restent ceux du calcul.';
+  };
+  tour(); sondeIa = setInterval(tour, 1000);
+}
+function appliquer(a) {
+  avisEtat = { etat: 'fini', p: 1 };
+  const vus = Object.values(a.avis || {});
+  let gardes = 0;
+  const actuel = moments[choisi];
+  for (const v of vus) {
+    const m = moments.find(x => x.cle === v.cle);
+    if (!m) continue;
+    m.ia = { note: v.note, quoi: v.quoi, hooks: v.hooks || [] };
+    m.debut = v.debut; m.fin = v.fin; m.garde = !!v.garder;
+    // on ne remplace jamais un hook que tu as écrit toi-même
+    if ((!m.hook || m.hookAuto) && m.ia.hooks.length) { m.hook = m.ia.hooks[0]; m.hookAuto = true; }
+    if (m.garde) gardes++;
+  }
+  const nomModele = (a.modele || '').replace('claude-', '').replace(/-(\d)-(\d)$/, ' $1.$2');
+  $('#ruban').textContent = 'Claude a gardé ' + gardes + (gardes > 1 ? ' moments' : ' moment') + ' sur ' + vus.length + '.';
+  $('#ruban-fin').textContent = (nomModele ? nomModele + ' · ' : '') + String(a.secondes || 0).replace('.', ',') + ' s';
+  if (dernierJob) etapes(dernierJob);
+  const meilleur = plusFort();
+  choisir(actuel && actuel.ia && actuel.garde ? moments.indexOf(actuel) : meilleur);
+}
+$('#demander').onclick = demander;
+
+/* ---------- moments ---------- */
+function grille() {
+  const boite = $('#grille'), max = Math.max(...moments.map(m => m.note), 0.01);
+  boite.replaceChildren();
+  // les numéros suivent l'ordre de la vidéo ; l'affichage met les mieux notés par Claude d'abord
+  const ordre = moments.map((m, i) => i).sort((p, q) => valeur(moments[q]) - valeur(moments[p]) || p - q);
+  const avecAvis = moments.some(m => m.ia);
+  (avecAvis ? ordre : moments.map((m, i) => i)).forEach(i => {
+    const m = moments[i];
+    const b = document.createElement('button');
+    b.className = 'moment' + (i === choisi ? ' choisi' : '') + (m.garde ? ' garde' : '') + (m.ia && m.ia.note <= 3 ? ' ecarte' : '');
+    const im = new Image(); im.alt = ''; im.loading = 'lazy';
+    if (m.vignette) im.src = '/vignette?id=' + job.id + '&nom=' + m.vignette;
+    const num = document.createElement('span'); num.className = 'num'; num.textContent = String(i + 1).padStart(2, '0');
+    const coche = document.createElement('span'); coche.className = 'coche'; coche.textContent = '✓'; coche.title = 'Garder ce moment';
+    coche.onclick = ev => { ev.stopPropagation(); m.garde = !m.garde; grille(); boutons(); };
+    const bas = document.createElement('div'); bas.className = 'bas';
+    const quand = document.createElement('div'); quand.className = 'quand';
+    quand.innerHTML = '<span></span><em></em>';
+    quand.firstChild.textContent = mmss(m.debut) + ' → ' + mmss(m.fin);
+    quand.lastChild.textContent = (m.fin - m.debut).toFixed(0) + ' s';
+    const jauge = document.createElement('div'); jauge.className = 'jauge';
+    const s = document.createElement('span'); s.style.width = Math.max(4, m.ia ? m.ia.note * 10 : m.note / max * 100) + '%'; jauge.append(s);
+    const acc = document.createElement('div'); acc.className = 'accroche'; acc.textContent = m.hook || 'pas encore de hook';
+    bas.append(quand, jauge);
+    if (m.ia) {
+      const vu = document.createElement('div'); vu.className = 'vu-court'; vu.textContent = m.ia.quoi; bas.append(vu);
+      const av = document.createElement('span'); av.textContent = m.ia.note + '/10';
+      av.className = 'avis' + (m.ia.note >= 8 ? '' : m.ia.note >= 5 ? ' moyen' : ' faible'); av.title = 'Note de Claude';
+      b.append(av);
+    }
+    bas.append(acc); b.append(im, num, coche, bas);
+    b.onclick = () => choisir(i);
+    boite.append(b);
+  });
+  if (!moments.length) boite.innerHTML = '<div class="vide">Aucun moment. Double-clique dans la séquence pour en ajouter un.</div>';
+  $('#compte').textContent = moments.length + ' · ' + moments.filter(m => m.garde).length + ' cochés';
+}
+
+function choisir(i) {
+  choisi = i;
+  const m = moments[i];
+  $('#quel').textContent = m ? 'moment ' + String(i + 1).padStart(2, '0') : '';
+  $('#hook').value = m ? m.hook : '';
+  if (m) { video.currentTime = m.debut; video.play().catch(() => {}); }
+  propositions();
+  grille(); bornes(); calque(); boutons(); piste();
+}
+/* ce que Claude a vu dans ce moment, et ses trois hooks : un clic pose le hook */
+function propositions() {
+  const m = moments[choisi], boite = $('#propositions');
+  const src = job && job.source && job.source.texte ? job.source : null;
+  boite.hidden = !(m && (m.ia || src));
+  if (boite.hidden) return;
+  $('#vu').textContent = m.ia ? 'Claude, ' + m.ia.note + '/10 : ' + m.ia.quoi : 'Vidéo d\'un tweet de @' + src.arobase + ' : le hook reprend son texte.';
+  const puce = (texte, devant) => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = (devant || '') + texte;
+    b.onclick = () => { m.hook = texte; m.hookAuto = false; $('#hook').value = texte; calque(); grille(); };
+    return b;
+  };
+  const puces = (m.ia ? m.ia.hooks : []).map(h => puce(h));
+  if (src) puces.push(puce(court(src.texte), 'Tweet de @' + src.arobase + ' · '));
+  $('#puces').replaceChildren(...puces);
+}
+function boutons() {
+  const n = moments.filter(m => m.garde).length;
+  $('#fabriquer').disabled = choisi < 0;
+  $('#fabriquer-tout').disabled = n === 0;
+  $('#fabriquer-tout').textContent = n ? 'Fabriquer les ' + n + ' moments cochés' : 'Fabriquer les moments cochés';
+}
+function bornes() {
+  const m = moments[choisi];
+  $('#v-debut').textContent = m ? mmss(m.debut) : '–';
+  $('#v-fin').textContent = m ? mmss(m.fin) : '–';
+  $('#o-duree').textContent = m ? '· ' + (m.fin - m.debut).toFixed(1).replace('.', ',') + ' s' : '';
+  etatSon(); groupeVu = null;
+}
+function borner(quoi, valeur) {
+  const m = moments[choisi]; if (!m) return;
+  const duree = job.analyse.infos.duree;
+  if (quoi === 'debut') m.debut = Math.max(0, Math.min(valeur, m.fin - 2));
+  else m.fin = Math.min(duree, Math.max(valeur, m.debut + 2));
+  m.debut = +m.debut.toFixed(2); m.fin = +m.fin.toFixed(2);
+  bornes(); grille(); piste();
+}
+document.querySelectorAll('[data-borne]').forEach(b => b.onclick = () => {
+  const m = moments[choisi]; if (m) borner(b.dataset.borne, m[b.dataset.borne] + (+b.dataset.pas));
+});
+document.querySelectorAll('[data-duree]').forEach(b => b.onclick = () => {
+  const m = moments[choisi]; if (m) borner('fin', m.debut + (+b.dataset.duree));
+});
+$('#debut-ici').onclick = () => borner('debut', video.currentTime);
+$('#fin-ici').onclick = () => borner('fin', video.currentTime);
+
+/* ---------- réglages ---------- */
+function reglages() {
+  [...$('#style').children].forEach(x => x.classList.toggle('actif', x.dataset.v === regl.style));
+  $('#entete').checked = regl.entete; $('#signature').hidden = !regl.entete;
+  $('#nom').value = regl.nom; $('#arobase').value = regl.arobase;
+  $('#zoom').value = regl.zoom; $('#volume').value = regl.volume;
+  $('#o-zoom').textContent = '× ' + (+regl.zoom).toFixed(2).replace('.', ',');
+  $('#o-volume').textContent = Math.round(regl.volume * 100) + ' %';
+  cadrer();
+}
+function noter() { garde.ecrire('clipeur-reglages', regl); reglages(); calque(); }
+$('#style').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { regl.style = b.dataset.v; noter(); } });
+$('#entete').onchange = e => { regl.entete = e.target.checked; noter(); };
+$('#nom').oninput = e => { regl.nom = e.target.value; garde.ecrire('clipeur-reglages', regl); calque(); };
+$('#arobase').oninput = e => { regl.arobase = e.target.value; garde.ecrire('clipeur-reglages', regl); calque(); };
+$('#zoom').oninput = e => { regl.zoom = +e.target.value; noter(); };
+$('#volume').oninput = e => { regl.volume = +e.target.value; noter(); if (!video.muted) video.volume = regl.volume; };
+$('#hook').oninput = e => { const m = moments[choisi]; if (m) { m.hook = e.target.value; m.hookAuto = false; calque();
+  const c = document.querySelector('.moment.choisi .accroche'); if (c) c.textContent = m.hook || 'pas encore de hook'; } };
+
+/* hauteur du jeu dans le cadre 1080 x 1920, pour un zoom donné */
+function hauteurJeu() {
+  const inf = job.analyse.infos;
+  return Math.min(1920, Math.round(1080 * inf.hauteur / inf.largeur * regl.zoom));
+}
+function cadrer() {
+  if (!job) return;
+  const inf = job.analyse.infos, boite = $('#ecran'), L = boite.clientWidth, H = boite.clientHeight;
+  const h = hauteurJeu() / 1920 * H, jeu = $('#jeu');
+  jeu.style.height = h + 'px'; jeu.style.top = (H - h) / 2 + 'px';
+  const l = h * inf.largeur / inf.hauteur;
+  video.style.width = l + 'px'; video.style.left = (L - l) / 2 + 'px';
+}
+new ResizeObserver(() => { cadrer(); piste(); }).observe(document.body);
+
+/* ---------- le calque du hook, dessiné en 1080 x 1920 ---------- */
+function lignes(ctx, texte, largeur) {
+  const out = [];
+  for (const para of texte.split('\n')) {
+    let ligne = '';
+    for (const mot of para.split(/\s+/).filter(Boolean)) {
+      const essai = ligne ? ligne + ' ' + mot : mot;
+      if (ligne && ctx.measureText(essai).width > largeur) { out.push(ligne); ligne = mot; } else ligne = essai;
+    }
+    out.push(ligne);
+  }
+  return out;
+}
+function arrondi(ctx, x, y, l, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + l, y, x + l, y + h, r); ctx.arcTo(x + l, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + l, y, r); ctx.closePath();
+}
+function dessiner(ctx, texte, hJeu) {
+  dessinerHook(ctx, texte, hJeu);
+  // la ligne « ID » du morceau, juste sous l'image du jeu (jamais dans la zone des légendes de TikTok)
+  const id = son.nom && fiche && son.ligne ? ligneId().trim() : '';
+  if (!id) return;
+  const y = Math.min((1920 + hJeu) / 2 + 30, 1470);
+  ctx.save();
+  ctx.font = '600 38px "Helvetica Neue", Helvetica, Arial, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.lineJoin = 'round';
+  ctx.lineWidth = 8; ctx.strokeStyle = 'rgba(0,0,0,.85)'; ctx.strokeText(id, 540, y, 980);
+  ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.fillText(id, 540, y, 980);
+  ctx.restore();
+}
+function dessinerHook(ctx, texte, hJeu) {
+  const W = 1080, H = 1920, haut = (H - hJeu) / 2;
+  ctx.clearRect(0, 0, W, H);
+  texte = (texte || '').trim();
+  if (!texte || regl.style === 'aucun') return;
+  const famille = '"Helvetica Neue", Helvetica, Arial, "Apple Color Emoji", sans-serif';
+  if (regl.style === 'texte') {
+    let taille = 72, ls;
+    do { ctx.font = '800 ' + taille + 'px ' + famille; ls = lignes(ctx, texte, W - 150); taille -= 4; } while (ls.length > 4 && taille > 40);
+    taille += 4;
+    const inter = taille * 1.16, bloc = ls.length * inter;
+    let y = Math.max(170, haut - 36 - bloc);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.lineJoin = 'round';
+    ctx.lineWidth = taille * 0.2; ctx.strokeStyle = '#000'; ctx.fillStyle = '#fff';
+    for (const l of ls) { ctx.strokeText(l, W / 2, y); ctx.fillText(l, W / 2, y); y += inter; }
+    return;
+  }
+  const marge = 64, pad = 40, large = W - 2 * marge;
+  let taille = 54, ls;
+  do { ctx.font = '700 ' + taille + 'px ' + famille; ls = lignes(ctx, texte, large - 2 * pad); taille -= 3; } while (ls.length > 5 && taille > 34);
+  taille += 3;
+  const inter = taille * 1.24, tete = regl.entete ? 108 : 0;
+  const hc = pad * 2 + tete + ls.length * inter - (inter - taille) * 0.6;
+  const y0 = Math.max(150, haut - 34 - hc);
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 30; ctx.shadowOffsetY = 8;
+  ctx.fillStyle = '#fff'; arrondi(ctx, marge, y0, large, hc, 34); ctx.fill(); ctx.restore();
+  let y = y0 + pad;
+  if (regl.entete) {
+    const nom = regl.nom.trim() || 'Ton nom', aro = regl.arobase.trim() || '@toncompte';
+    const g = ctx.createLinearGradient(marge + pad, y, marge + pad + 84, y + 84); g.addColorStop(0, '#ff4fa3'); g.addColorStop(1, '#b596ff');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(marge + pad + 42, y + 42, 42, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = '800 44px ' + famille; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(nom.charAt(0).toUpperCase(), marge + pad + 42, y + 45);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillStyle = '#0f1419'; ctx.font = '700 36px ' + famille; ctx.fillText(nom, marge + pad + 104, y + 4);
+    ctx.fillStyle = '#5b6b78'; ctx.font = '400 31px ' + famille; ctx.fillText(aro.startsWith('@') ? aro : '@' + aro, marge + pad + 104, y + 48);
+    y += tete;
+  }
+  ctx.fillStyle = '#0f1419'; ctx.font = '700 ' + taille + 'px ' + famille; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  for (const l of ls) { ctx.fillText(l, marge + pad, y); y += inter; }
+}
+function calque() {
+  if (!job) return;
+  const m = moments[choisi];
+  dessiner($('#calque').getContext('2d'), m ? m.hook : '', hauteurJeu());
+}
+
+/* les paroles dans l'aperçu : le clip final les dessine avec ffmpeg, même police, même taille, même place */
+function dessinerParoles() {
+  const m = moments[choisi];
+  let g = null;
+  if (job && m && son.nom && fiche && son.paroles) {
+    const t = departSon(m) + (video.currentTime - m.debut);
+    g = fiche.paroles.find(x => x.t && t >= x.d && t < x.f) || null;
+  }
+  const cle = g ? g.d + '|' + g.t + '|' + hauteurJeu() : '';
+  if (cle === groupeVu) return;
+  groupeVu = cle;
+  const c = $('#paroles').getContext('2d');
+  c.clearRect(0, 0, 1080, 1920);
+  if (!g) return;
+  c.font = '700 160px "DIN Condensed", "Avenir Next Condensed", Impact, sans-serif';
+  c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.lineJoin = 'round';
+  const ls = lignes(c, g.t.toUpperCase(), 960), y = Math.round(Math.min(1500, 960 + 0.18 * hauteurJeu()));
+  ls.forEach((l, i) => {
+    const base = y + 55 + (i - (ls.length - 1) / 2) * 190;
+    c.lineWidth = 14; c.strokeStyle = '#000'; c.strokeText(l, 540, base);
+    c.fillStyle = '#fff'; c.fillText(l, 540, base);
+  });
+}
+(function boucle() { dessinerParoles(); requestAnimationFrame(boucle); })();
+
+/* ---------- lecture ---------- */
+video.addEventListener('timeupdate', () => {
+  const m = moments[choisi];
+  if (m && (video.currentTime >= m.fin - 0.04 || video.currentTime < m.debut - 0.4)) video.currentTime = m.debut;
+  $('#temps').textContent = mmss(video.currentTime) + (m ? '  ·  ' + Math.max(0, video.currentTime - m.debut).toFixed(1).replace('.', ',') + ' s' : '');
+  piste();
+});
+video.addEventListener('error', () => { $('#avis').hidden = false; });
+video.addEventListener('play', () => { $('#lecture').textContent = 'Pause'; });
+video.addEventListener('pause', () => { $('#lecture').textContent = 'Lecture'; });
+$('#lecture').onclick = () => { video.paused ? video.play().catch(() => {}) : video.pause(); };
+$('#muet').onclick = () => { video.muted = !video.muted; video.volume = regl.volume; $('#muet').textContent = video.muted ? 'Son coupé' : 'Son activé'; calerAudio(); };
+document.addEventListener('keydown', e => {
+  if (!job || /INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
+  if (e.code === 'Space') { e.preventDefault(); $('#lecture').click(); }
+  if (e.code === 'ArrowRight' && choisi < moments.length - 1) choisir(choisi + 1);
+  if (e.code === 'ArrowLeft' && choisi > 0) choisir(choisi - 1);
+});
+
+/* ---------- séquence ---------- */
+const cp = $('#piste');
+function piste() {
+  if (!job || !cp.clientWidth) return;
+  const a = job.analyse, duree = a.infos.duree, r = window.devicePixelRatio || 1;
+  const L = cp.clientWidth, H = cp.clientHeight;
+  if (cp.width !== Math.round(L * r)) { cp.width = Math.round(L * r); cp.height = Math.round(H * r); }
+  const c = cp.getContext('2d'); c.setTransform(r, 0, 0, r, 0, 0); c.clearRect(0, 0, L, H);
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const x = t => t / duree * L, y0 = 70, y1 = H - 18;
+  const courbe = (serie, max) => serie.map((v, i) => [i / (serie.length - 1 || 1) * L, y1 - Math.min(1, v / max) * (y1 - y0)]);
+  // note de chaque seconde
+  const maxNote = Math.max(...a.note, 0.01), pn = courbe(a.note, maxNote);
+  const deg = c.createLinearGradient(0, y0, 0, y1); deg.addColorStop(0, 'rgba(255,79,163,.55)'); deg.addColorStop(1, 'rgba(255,79,163,.04)');
+  c.beginPath(); c.moveTo(0, y1); pn.forEach(p => c.lineTo(p[0], p[1])); c.lineTo(L, y1); c.closePath(); c.fillStyle = deg; c.fill();
+  c.beginPath(); pn.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.strokeStyle = css('--rose'); c.lineWidth = 1.4; c.stroke();
+  // niveau du son
+  c.beginPath(); courbe(a.son, 1).forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]));
+  c.strokeStyle = css('--menthe'); c.globalAlpha = .55; c.lineWidth = 1; c.stroke(); c.globalAlpha = 1;
+  // repères de temps
+  const pas = [5, 10, 30, 60, 120, 300, 600, 1200, 1800, 3600].find(p => duree / p <= 12) || 3600;
+  c.font = '10px ui-monospace, Menlo, monospace'; c.fillStyle = css('--sourd'); c.textBaseline = 'bottom';
+  for (let t = 0; t < duree; t += pas) { c.fillRect(x(t), y1, 1, 4); c.fillText(mmss(t), x(t) + 3, H - 2); }
+  // moments
+  moments.forEach((m, i) => {
+    const a0 = x(m.debut), l = Math.max(3, x(m.fin) - a0), sel = i === choisi;
+    c.fillStyle = sel ? 'rgba(255,79,163,.30)' : 'rgba(255,182,92,.14)'; c.fillRect(a0, 0, l, y1);
+    c.strokeStyle = sel ? css('--rose') : css('--ambre'); c.lineWidth = sel ? 2 : 1.2; c.strokeRect(a0 + .5, .5, l - 1, y1 - 1);
+    if (m.garde) { c.fillStyle = css('--menthe'); c.fillRect(a0, 0, l, 3); }
+    c.fillStyle = sel ? '#fff' : css('--ambre'); c.textBaseline = 'top'; c.fillText(String(i + 1).padStart(2, '0'), a0 + 4, 61);
+  });
+  // tête de lecture
+  c.fillStyle = '#fff'; c.fillRect(x(video.currentTime || 0), 0, 1.5, y1);
+}
+const tempsSous = e => { const b = cp.getBoundingClientRect(); return Math.max(0, Math.min(1, (e.clientX - b.left) / b.width)) * job.analyse.infos.duree; };
+cp.addEventListener('click', e => {
+  if (!job) return;
+  const t = tempsSous(e), i = moments.findIndex(m => t >= m.debut && t <= m.fin);
+  if (i >= 0) { if (i !== choisi) choisir(i); else video.currentTime = t; }
+  else { choisi = -1; $('#quel').textContent = ''; $('#hook').value = ''; video.currentTime = t; propositions(); grille(); bornes(); calque(); boutons(); piste(); }
+});
+cp.addEventListener('dblclick', e => {
+  if (!job) return;
+  const t = tempsSous(e), r = job.analyse.reglages, duree = job.analyse.infos.duree;
+  if (moments.some(m => t >= m.debut && t <= m.fin)) return;
+  moments.push({ pic: t, debut: +Math.max(0, t - r.avant).toFixed(2), fin: +Math.min(duree, t + r.apres).toFixed(2), note: 0, garde: false, hook: '', vignette: '' });
+  moments.sort((p, q) => p.debut - q.debut);
+  choisir(moments.findIndex(m => m.pic === t));
+});
+
+/* ---------- fabrication ---------- */
+function envoyer(i) {
+  const m = moments[i];
+  const toile = document.createElement('canvas'); toile.width = 1080; toile.height = 1920;
+  dessiner(toile.getContext('2d'), m.hook, hauteurJeu());
+  const avecSon = !!(son.nom && fiche);
+  const vide = (!m.hook.trim() || regl.style === 'aucun') && !(avecSon && son.ligne && ligneId().trim());
+  return api('/api/rendre', { job: job.id, debut: m.debut, fin: m.fin, zoom: regl.zoom, volume: regl.volume,
+                              calque: vide ? '' : toile.toDataURL('image/png'), titre: m.hook,
+                              son: avecSon ? { nom: son.nom, debut: +departSon(m).toFixed(3), volume: son.volume } : null,
+                              paroles: avecSon && son.paroles });
+}
+$('#fabriquer').onclick = async () => { if (choisi >= 0) { await envoyer(choisi); surveiller(); } };
+$('#fabriquer-tout').onclick = async () => {
+  for (let i = 0; i < moments.length; i++) if (moments[i].garde) await envoyer(i);
+  surveiller();
+};
+$('#dossier').onclick = () => api('/api/finder', {});
+
+function sorties(e) {
+  const boite = $('#sorties');
+  boite.replaceChildren();
+  const enCours = e.rendus.filter(r => r.etat !== 'fini');
+  const lignesSortie = [
+    ...enCours.map(r => ({ nom: r.nom, etat: r.etat, detail: r.etat === 'erreur' ? r.erreur : r.etat === 'encours' ? 'fabrication…' : 'en attente' })),
+    ...e.sorties.map(s => ({ nom: s.nom, etat: 'fini', detail: poids(s.poids) })),
+  ];
+  if (!lignesSortie.length) { boite.innerHTML = '<div class="vide">Aucun clip pour l\'instant.</div>'; return enCours.length; }
+  for (const s of lignesSortie) {
+    const d = document.createElement('div'); d.className = 'sortie';
+    const qui = document.createElement('div'); qui.className = 'qui';
+    const b = document.createElement('b'); b.textContent = s.nom;
+    const sp = document.createElement('span'); sp.textContent = s.detail; sp.className = 'etat-' + s.etat;
+    qui.append(b, sp); d.append(qui);
+    if (s.etat === 'fini') {
+      const voir = document.createElement('a'); voir.className = 'bouton petit'; voir.textContent = 'Voir';
+      voir.href = '/sortie/' + encodeURIComponent(s.nom); voir.target = '_blank'; voir.style.textDecoration = 'none';
+      const fin = document.createElement('button'); fin.className = 'bouton petit'; fin.textContent = 'Finder';
+      fin.onclick = () => api('/api/finder', { nom: s.nom });
+      d.append(voir, fin);
+    }
+    boite.append(d);
+  }
+  return enCours.filter(r => r.etat !== 'erreur').length;
+}
+function surveiller() {
+  clearInterval(suivi);
+  const tour = async () => { const reste = sorties(await api('/api/etat')); if (!reste) clearInterval(suivi); };
+  tour(); suivi = setInterval(tour, 900);
+}
+
+accueil();
+chargerSons();
+/* « localhost:4848/#<numéro de l'analyse> » ouvre directement cette vidéo ; recharger la page la garde ouverte */
+const depuisLien = () => { const h = location.hash.slice(1); if (/^[0-9a-f]{8,32}$/.test(h) && !(job && job.id === h)) ouvrir(h); };
+window.addEventListener('hashchange', depuisLien);
+depuisLien();
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+# Données locales : vidéos déposées, analyses, clips fabriqués, morceaux
+entree/
+travail/
+sorties/
+sons/
+
+# Plans de montage personnels (ils pointent vers des dossiers de ce Mac)
+edits/film_*.json
+edits/foot_*.json
+
+.DS_Store
+__pycache__/
+*.pyc

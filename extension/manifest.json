@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Clipeur pour X",
+  "version": "1.0.0",
+  "description": "Un bouton sur chaque tweet : sa vidéo et son texte partent dans Clipeur, sur ce Mac.",
+  "icons": { "16": "icone16.png", "48": "icone48.png", "128": "icone128.png" },
+  "action": { "default_title": "Ouvrir Clipeur", "default_icon": { "16": "icone16.png", "48": "icone48.png" } },
+  "background": { "service_worker": "fond.js" },
+  "host_permissions": ["http://localhost:4848/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://x.com/*", "https://twitter.com/*"],
+      "js": ["tweets.js"],
+      "css": ["tweets.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
